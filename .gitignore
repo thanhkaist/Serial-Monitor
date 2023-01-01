@@ -1,0 +1,7 @@
+/.venv
+/build
+/buldle.bat
+/dist
+/moniter.spec
+/monitor.spec
+/__pycache__
