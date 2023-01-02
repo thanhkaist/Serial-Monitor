@@ -40,6 +40,12 @@ class SerialMonitor(QtWidgets.QMainWindow):
         self.toolBar.portFilterButton.clicked.connect(self.portFilter)
         self.serialSendView.serialSendSignal.connect(self.sendFromPort)
         self.port.readyRead.connect(self.readFromPort)
+        self.toolBar.viewClearButton.clicked.connect(self.clearViews)
+    
+    def clearViews(self):
+        self.serialDataView.clear()
+        self.serialSendView.clear()
+    
     def portFilter(self):
         self.filterWidget.show()
 
@@ -260,6 +266,10 @@ class ToolBar(QtWidgets.QToolBar):
         self.portFilterButton.setCheckable(False)
         self.portFilterButton.setMinimumHeight(32)
 
+        
+        self.viewClearButton = QtWidgets.QPushButton('Clear')
+        self.viewClearButton.setCheckable(False)
+        self.viewClearButton.setMinimumHeight(32)
 
         self.portNames = QtWidgets.QComboBox(self)
         self.portNames.addItems([ port.portName() for port in QSerialPortInfo().availablePorts() ])
@@ -304,6 +314,7 @@ class ToolBar(QtWidgets.QToolBar):
         self.addWidget( self.stopBits)
         self.addWidget( self._flowControl)
         self.addWidget( self.portFilterButton) 
+        self.addWidget( self.viewClearButton)
 
     def serialControlEnable(self, flag):
         self.portNames.setEnabled(flag)
