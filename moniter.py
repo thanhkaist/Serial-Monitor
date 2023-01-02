@@ -395,11 +395,7 @@ class TextFilterVisualization(QWidget):
         return [self.filter_list.item(i).text() for i in range(self.filter_list.count())]
 
 
-
-if __name__ == '__main__':
-
-    app = QtWidgets.QApplication(sys.argv)
-
+def check_password():
     # Create a password input dialog
     password, ok = QInputDialog.getText(None, "Enter Password", "Password:", QLineEdit.Password)
 
@@ -417,8 +413,16 @@ if __name__ == '__main__':
     else:
         sys.exit()
 
+
+
+if __name__ == '__main__':
+
+    app = QtWidgets.QApplication(sys.argv)
+
+    if False:
+        check_password()
+
     window = SerialMonitor()
-    #Set icon for application using a default serial icon
     app.setWindowIcon( QtGui.QIcon('serial.png') )
     window.show()
     app.exec()
