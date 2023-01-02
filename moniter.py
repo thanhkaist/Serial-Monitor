@@ -150,7 +150,7 @@ class SerialDataView(QtWidgets.QWidget):
         if len(appendLists[-1]) < 47:
             appendLists[-1] = appendLists[-1][:-1]
 
-        for insertText in appendLists:
+        for insertText in   appendLists:
             self.serialDataHex.insertPlainText(insertText)
         
         self.serialData.moveCursor(QtGui.QTextCursor.End)
@@ -198,15 +198,15 @@ class SerialSendView(QtWidgets.QWidget):
         self.sendButton.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
         
         
-        self.sendData1 = QtWidgets.QTextEdit(self)
-        self.sendData1.setAcceptRichText(False)
-        self.sendData1.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        self.sendDataHex = QtWidgets.QTextEdit(self)
+        self.sendDataHex.setAcceptRichText(False)
+        self.sendDataHex.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         # self.sendData1.textChanged.connect(on_text_changed)
         
 
-        self.sendButton1 = QtWidgets.QPushButton('Send Hex')
-        self.sendButton1.clicked.connect(self.sendButtonHexClicked)
-        self.sendButton1.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        self.sendButtonHex = QtWidgets.QPushButton('Send Hex')
+        self.sendButtonHex.clicked.connect(self.sendButtonHexClicked)
+        self.sendButtonHex.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
         
         self.setLayout( QtWidgets.QVBoxLayout(self) )
         # Create AsciiBox
@@ -216,8 +216,8 @@ class SerialSendView(QtWidgets.QWidget):
         AsciiBox.setContentsMargins(3, 3, 3, 3)
         # Create HexBox
         HexBox = QtWidgets.QHBoxLayout() # HexBox
-        HexBox.addWidget(self.sendData1)
-        HexBox.addWidget(self.sendButton1)
+        HexBox.addWidget(self.sendDataHex)
+        HexBox.addWidget(self.sendButtonHex)
         HexBox.setContentsMargins(3, 3, 3, 3)
         # Add AsciiBox and HexBox to layout
         self.layout().addLayout(AsciiBox)
@@ -231,10 +231,10 @@ class SerialSendView(QtWidgets.QWidget):
     
     def sendButtonHexClicked(self):
         # remove all spaces
-        text = self.sendData1.toPlainText().replace(" ", "")
+        text = self.sendDataHex.toPlainText().replace(" ", "")
         # text = text.replace('\n', '')
         if not re.match( '^[0-9a-fA-F]*$', text ):
-            self.sendData1.clear()
+            self.sendDataHex.clear()
             # use QMessageBox to show error
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Critical)
@@ -400,7 +400,7 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication(sys.argv)
 
-        # Create a password input dialog
+    # Create a password input dialog
     password, ok = QInputDialog.getText(None, "Enter Password", "Password:", QLineEdit.Password)
 
     if ok:
