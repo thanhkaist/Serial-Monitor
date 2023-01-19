@@ -8,6 +8,20 @@ from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QLineEdit, QList
 from PyQt5.QtWidgets import QInputDialog, QLineEdit
 
 import binascii
+
+
+# enum class for popular colors
+class Color:
+    Black = QtGui.QColor(0, 0, 0)
+    White = QtGui.QColor(255, 255, 255)
+    Red = QtGui.QColor(255, 0, 0)
+    Green = QtGui.QColor(0, 255, 0)
+    Blue = QtGui.QColor(0, 0, 255)
+    Yellow = QtGui.QColor(255, 255, 0)
+    Cyan = QtGui.QColor(0, 255, 255)
+    Magenta = QtGui.QColor(255, 0, 255)
+
+
 class SerialMonitor(QtWidgets.QMainWindow):
     def __init__(self):
         super(SerialMonitor, self).__init__()
@@ -44,7 +58,6 @@ class SerialMonitor(QtWidgets.QMainWindow):
     
     def clearViews(self):
         self.serialDataView.clear()
-        self.serialSendView.clear()
     
     def portFilter(self):
         self.filterWidget.show()
@@ -87,11 +100,11 @@ class SerialMonitor(QtWidgets.QMainWindow):
 
 
             if "TX" in dataString:
-                self.serialDataView.appendSerialText(dataString, QtGui.QColor(255, 0, 0) )
+                self.serialDataView.appendSerialText(dataString, Color.Red )
             elif "RX" in dataString:
-                self.serialDataView.appendSerialText(dataString, QtGui.QColor(0, 255, 0) )
+                self.serialDataView.appendSerialText(dataString, Color.Green )
             else:
-                self.serialDataView.appendSerialText(dataString, QtGui.QColor(0, 0, 255) )
+                self.serialDataView.appendSerialText(dataString, Color.Magenta)
                 
         # data = self.port.readAll()
         # if len(data) > 0:
@@ -99,9 +112,10 @@ class SerialMonitor(QtWidgets.QMainWindow):
         #     self.serialDataView.appendSerialText( QtCore.QTextStream(data).readAll(), QtGui.QColor(255, 0, 0) )
 
     def sendFromPort(self, text, hexFlag):
+        
         # Check port is open
         if  self.port.isOpen():
-            self.port.write( text.encode("utf-8")) 
+            self.port.write( text.encode("utf-8"))
             if hexFlag:
                 # convert hex to printable string
                 self.serialDataView.appendSerialText( text, QtGui.QColor(255, 0, 255) )
@@ -131,6 +145,10 @@ class SerialDataView(QtWidgets.QWidget):
         self.layout().addWidget(self.label,         0, 1, 1, 1)
         self.layout().addWidget(self.serialDataHex, 1, 1, 1, 1)
         self.layout().setContentsMargins(2, 2, 2, 2)
+
+    def clear(self):
+        self.serialData.clear()
+        self.serialDataHex.clear()
         
     def appendSerialText(self, appendText, color):
         self.serialData.moveCursor(QtGui.QTextCursor.End)
@@ -161,6 +179,7 @@ class SerialDataView(QtWidgets.QWidget):
         
         self.serialData.moveCursor(QtGui.QTextCursor.End)
         self.serialDataHex.moveCursor(QtGui.QTextCursor.End)
+
 
 class SerialSendView(QtWidgets.QWidget):
 
@@ -208,36 +227,55 @@ class SerialSendView(QtWidgets.QWidget):
         self.sendDataHex.setAcceptRichText(False)
         self.sendDataHex.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         # self.sendData1.textChanged.connect(on_text_changed)
-        
+        self.isEndlineToolBox = QtWidgets.QCheckBox('\\r\\n')
+        self.isEndlineToolBox.setChecked(True)
+        self.isEndlineToolBox.setFixedSize(50, 30)
 
         self.sendButtonHex = QtWidgets.QPushButton('Send Hex')
         self.sendButtonHex.clicked.connect(self.sendButtonHexClicked)
         self.sendButtonHex.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        self.isEndlineToolBoxHex = QtWidgets.QCheckBox('\\r\\n')
+        self.isEndlineToolBoxHex.setChecked(True)
+        self.isEndlineToolBoxHex.setFixedSize(50, 30)
         
         self.setLayout( QtWidgets.QVBoxLayout(self) )
         # Create AsciiBox
         AsciiBox = QtWidgets.QHBoxLayout() # AsciiBox
         AsciiBox.addWidget(self.sendData)
+        AsciiBox.addWidget(self.isEndlineToolBox)
         AsciiBox.addWidget(self.sendButton)
         AsciiBox.setContentsMargins(3, 3, 3, 3)
+
         # Create HexBox
         HexBox = QtWidgets.QHBoxLayout() # HexBox
         HexBox.addWidget(self.sendDataHex)
+        HexBox.addWidget(self.isEndlineToolBoxHex)
         HexBox.addWidget(self.sendButtonHex)
+        
         HexBox.setContentsMargins(3, 3, 3, 3)
         # Add AsciiBox and HexBox to layout
         self.layout().addLayout(AsciiBox)
         self.layout().addLayout(HexBox)
         self.layout().setContentsMargins(2, 2, 2, 2)
 
-
+        
     def sendButtonClicked(self):
-        self.serialSendSignal.emit( self.sendData.toPlainText(),False )
+        text = self.sendData.toPlainText()
+        if text == '':
+            return
+        if self.isEndlineToolBox.isChecked():
+            text += '\r\n'
+        self.serialSendSignal.emit( text,False )
         #self.sendData.clear()
     
     def sendButtonHexClicked(self):
         # remove all spaces
         text = self.sendDataHex.toPlainText().replace(" ", "")
+        if text == '':
+            return
+        if self.isEndlineToolBoxHex.isChecked():
+            text += '\r\n'
+        
         # text = text.replace('\n', '')
         if not re.match( '^[0-9a-fA-F]*$', text ):
             self.sendDataHex.clear()
