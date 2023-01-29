@@ -55,6 +55,7 @@ class SerialMonitor(QtWidgets.QMainWindow):
         self.serialSendView.serialSendSignal.connect(self.sendFromPort)
         self.port.readyRead.connect(self.readFromPort)
         self.toolBar.viewClearButton.clicked.connect(self.clearViews)
+        self.serialDataBuffer = ''
     
     def clearViews(self):
         self.serialDataView.clear()
@@ -85,32 +86,36 @@ class SerialMonitor(QtWidgets.QMainWindow):
             self.statusText.setText('Port closed')
             self.toolBar.portOpenButton.setText('Open')
             self.toolBar.serialControlEnable(True)
-        
+
+    def processLine(self, dataString):
+        filter_text_list = self.filterWidget.get_filter_list()
+        for filter_text in filter_text_list:
+            if filter_text in dataString:
+                return
+
+        if "TX" in dataString:
+            self.serialDataView.appendSerialText(dataString, Color.Red )
+        elif "RX" in dataString:
+            self.serialDataView.appendSerialText(dataString, Color.Green )
+        else:
+            self.serialDataView.appendSerialText(dataString, Color.Magenta)
+
     def readFromPort(self):
-        # check if readline is available
-        if (self.port.canReadLine):
-            data = self.port.readLine()
+        data = self.port.readAll()
+        if len(data)>0:
             dataString = QtCore.QTextStream(data).readAll()
-            # apply some filters
-            filter_text_list = self.filterWidget.get_filter_list()
-            for filter_text in filter_text_list:
-                if filter_text in dataString:
-                    return
-
-
-
-            if "TX" in dataString:
-                self.serialDataView.appendSerialText(dataString, Color.Red )
-            elif "RX" in dataString:
-                self.serialDataView.appendSerialText(dataString, Color.Green )
-            else:
-                self.serialDataView.appendSerialText(dataString, Color.Magenta)
-                
-        # data = self.port.readAll()
-        # if len(data) > 0:
-
-        #     self.serialDataView.appendSerialText( QtCore.QTextStream(data).readAll(), QtGui.QColor(255, 0, 0) )
-
+            self.serialDataBuffer += dataString
+            # get latest "\r\n" index in buffer
+            index = self.serialDataBuffer.rfind("\r\n")
+            if index != -1:
+                # get all data before "\r\n"
+                dataString = self.serialDataBuffer[:index+2]
+                self.serialDataBuffer = self.serialDataBuffer[index+2:]
+                datalines = dataString.split("\r\n")
+                for line in datalines:
+                    if len(line) > 0:
+                        self.processLine(line+"\r\n")
+        
     def sendFromPort(self, text, hexFlag):
         
         # Check port is open
@@ -198,25 +203,22 @@ class SerialSendView(QtWidgets.QWidget):
             if isinstance(sender, QtWidgets.QTextEdit):
                 text = sender.toPlainText()
                 if '\n' in text:
-                    if sender is self.sendData:
-                        self.serialSendSignal.emit( text.replace('\n', ''),False )
-                    else:
-                        text = text.replace('\n', '')
-                        text = text.replace(' ', '')
-                        if not re.match( '^[0-9a-fA-F]*$', text ):
-                            # use QMessageBox to show error
-                            msg = QtWidgets.QMessageBox()
-                            msg.setIcon(QtWidgets.QMessageBox.Critical)
-                            msg.setText("Text is not in hex format")
-                            msg.setWindowTitle("Error")
-                            msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-                            msg.exec_()
+                    text = text.strip()
+                    sender.setPlainText(text)
+                    cursor = sender.textCursor()
+                    cursor.movePosition(QtGui.QTextCursor.End)
+                    sender.setTextCursor(cursor)
+                    if text == "":
+                        return
 
-                            return
-                        self.serialSendSignal.emit( binascii.unhexlify(text).decode(),True )
+                    if sender is self.sendData:
+
+                        self.sendButtonClicked()
+                    else:
+                        self.sendButtonHexClicked()
                     #sender.clear()
 
-        # self.sendData.textChanged.connect(on_text_changed)
+        self.sendData.textChanged.connect(on_text_changed)
 
         self.sendButton = QtWidgets.QPushButton('Send Ascii')
         self.sendButton.clicked.connect(self.sendButtonClicked)
@@ -226,7 +228,7 @@ class SerialSendView(QtWidgets.QWidget):
         self.sendDataHex = QtWidgets.QTextEdit(self)
         self.sendDataHex.setAcceptRichText(False)
         self.sendDataHex.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        # self.sendData1.textChanged.connect(on_text_changed)
+        self.sendDataHex.textChanged.connect(on_text_changed)
         self.isEndlineToolBox = QtWidgets.QCheckBox('\\r\\n')
         self.isEndlineToolBox.setChecked(True)
         self.isEndlineToolBox.setFixedSize(50, 30)
@@ -261,6 +263,8 @@ class SerialSendView(QtWidgets.QWidget):
         
     def sendButtonClicked(self):
         text = self.sendData.toPlainText()
+        
+        text = text.strip()
         if text == '':
             return
         if self.isEndlineToolBox.isChecked():
