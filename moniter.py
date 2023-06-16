@@ -204,6 +204,8 @@ class SerialSendView(QtWidgets.QWidget):
                 text = sender.toPlainText()
                 if '\n' in text:
                     text = text.strip()
+                    text = text.replace('\n', '')
+                    text.replace('\r', '')
                     sender.setPlainText(text)
                     cursor = sender.textCursor()
                     cursor.movePosition(QtGui.QTextCursor.End)
